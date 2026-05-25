@@ -20,3 +20,9 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Auto-added by checker
+node_modules/
+.next/
+*.wav
+*.log
