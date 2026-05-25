@@ -1,0 +1,22 @@
+﻿# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Next.js build
+/.next
+/out
+
+# Production
+/build
+
+# Audio files (chặn file WAV nặng)
+*.wav
+!public/sounds/*.mp3
+
+# Environment
+.env*.local
+
+# OS files
+.DS_Store
+Thumbs.db
