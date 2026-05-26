@@ -1,5 +1,5 @@
-﻿'use client';
-
+﻿// app/components/ChatBox.tsx
+'use client';
 import { useState, useRef, useEffect } from 'react';
 
 interface Message {
@@ -8,10 +8,10 @@ interface Message {
 }
 
 export default function ChatBox() {
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -22,109 +22,231 @@ export default function ChatBox() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
-    const userMessage = input.trim();
+    const userMsg: Message = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
 
     try {
-      const response = await fetch('/api/ai-composer', {
+      const res = await fetch('/api/ai-composer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userMessage }),
+        body: JSON.stringify({ message: input }),
       });
-
-      const data = await response.json();
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: data.advice || 'Xin lỗi, mình chưa phản hồi được.' 
-      }]);
-    } catch (error) {
-      console.error('Error:', error);
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Có lỗi xảy ra. Hãy thử lại sau! 💙' 
-      }]);
+      const data = await res.json();
+      
+      if (data.reply) {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      }
+    } catch (err) {
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Xin lỗi, có lỗi xảy ra!' }]);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-50">
-      {!isOpen ? (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-3 rounded-full shadow-[0_0_20px_rgba(34,211,238,0.5)] hover:shadow-[0_0_30px_rgba(34,211,238,0.7)] transition-all duration-300 flex items-center space-x-2"
+    <>
+      {/* Nút mở chat */}
+      <button
+        onClick={() => setIsOpen(true)}
+        style={{
+          position: 'fixed',
+          bottom: '100px',
+          right: '20px',
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          border: 'none',
+          color: 'white',
+          fontSize: '28px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 20px rgba(99, 102, 241, 0.4)',
+          zIndex: 1000,
+          display: isOpen ? 'none' : 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        💬
+      </button>
+
+      {/* Khung chat */}
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '100px',
+            right: '20px',
+            width: '350px',
+            height: '500px',
+            background: 'rgba(17, 24, 39, 0.98)',
+            border: '1px solid #374151',
+            borderRadius: '16px',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
         >
-          <span className="text-2xl">🤖</span>
-          <span className="font-medium">AI Zen Bot</span>
-        </button>
-      ) : (
-        <div className="bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-2xl w-80 md:w-96 shadow-2xl">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-white/10">
-            <div className="flex items-center space-x-2">
-              <span className="text-2xl">🤖</span>
-              <span className="text-white font-medium">AI Zen Bot</span>
+          <div
+            style={{
+              padding: '1rem',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              color: 'white',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '1rem' }}> AI Music Assistant</div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>Hỏi tôi về âm nhạc!</div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-white transition-colors"
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                color: 'white',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                fontSize: '18px',
+              }}
             >
               ✕
             </button>
           </div>
 
           {/* Messages */}
-          <div className="p-4 max-h-80 overflow-y-auto space-y-3">
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.75rem',
+            }}
+          >
             {messages.length === 0 && (
-              <div className="text-center text-gray-400 text-sm py-4">
-                The night is a serene companion. Let the sounds guide your rest. 🌙
+              <div
+                style={{
+                  textAlign: 'center',
+                  color: '#6b7280',
+                  fontSize: '0.875rem',
+                  marginTop: '2rem',
+                }}
+              >
+                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎧</div>
+                <div>Chào bạn! Tôi có thể giúp gì?</div>
+                <div style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                  Ví dụ: "Nhạc nào giúp tập trung?"
+                </div>
               </div>
             )}
+            
             {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
-                    : 'bg-white/10 text-gray-200'
-                }`}>
-                  {msg.content}
-                </div>
+              <div
+                key={idx}
+                style={{
+                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                  background: msg.role === 'user' 
+                    ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' 
+                    : 'rgba(55, 65, 81, 0.8)',
+                  color: 'white',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  maxWidth: '80%',
+                  fontSize: '0.875rem',
+                  lineHeight: 1.4,
+                }}
+              >
+                {msg.content}
               </div>
             ))}
+            
             {loading && (
-              <div className="flex justify-start">
-                <div className="bg-white/10 px-3 py-2 rounded-xl">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                </div>
+              <div
+                style={{
+                  alignSelf: 'flex-start',
+                  background: 'rgba(55, 65, 81, 0.8)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  fontSize: '0.875rem',
+                  color: '#9ca3af',
+                }}
+              >
+                Đang nghĩ...
               </div>
             )}
+            
             <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">
-            <input
-              type="text"
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(31, 41, 55, 0.8)',
+              display: 'flex',
+              gap: '0.5rem',
+            }}
+          >
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask AI..."
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-400"
-              disabled={loading}
+              onKeyPress={handleKeyPress}
+              placeholder="Nhập tin nhắn..."
+              rows={1}
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '1px solid #374151',
+                background: 'rgba(17, 24, 39, 0.8)',
+                color: 'white',
+                fontSize: '0.875rem',
+                resize: 'none',
+                outline: 'none',
+              }}
             />
-          </form>
+            <button
+              onClick={sendMessage}
+              disabled={loading || !input.trim()}
+              style={{
+                padding: '0.75rem 1rem',
+                background: input.trim() && !loading
+                  ? 'linear-gradient(135deg, #6366f1, #8b5cf6)'
+                  : '#4b5563',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                cursor: input.trim() && !loading ? 'pointer' : 'not-allowed',
+                fontSize: '1.25rem',
+              }}
+            >
+              ➤
+            </button>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
