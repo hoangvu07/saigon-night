@@ -1,64 +1,17 @@
-﻿'use client';
+﻿// app/page.tsx - Saigon Night Audio Mixer (Final UI)
+'use client';
 import { useState, useEffect, useRef } from 'react';
 
 const TRACKS = [
   { id: 'suoi1', name: 'Suối 02', icon: '💧', src: '/sounds/back_suoi_02.mp3' },
   { id: 'suoi2', name: 'Suối 03', icon: '🌊', src: '/sounds/back_suoi_03.mp3' },
-  { id: 'mua',   name: 'Mưa dông', icon: '⛈️', src: '/sounds/back_suoi_04.mp3' },
-  { id: 'cafe',  name: 'Cafe',     icon: '☕', src: '/sounds/back_suoi_06.mp3' },
-  { id: 'suoi5', name: 'Suối 07', icon: '️', src: '/sounds/back_suoi_07.mp3' },
+  { id: 'mua', name: 'Mưa dông', icon: '⛈️', src: '/sounds/back_suoi_04.mp3' },
+  { id: 'cafe', name: 'Cafe', icon: '☕', src: '/sounds/back_suoi_06.mp3' },
+  { id: 'suoi5', name: 'Suối 07', icon: '🏔️', src: '/sounds/back_suoi_07.mp3' },
   { id: 'chim1', name: 'Chim 02', icon: '🐦', src: '/sounds/effect_chim-hot_02.mp3' },
   { id: 'chim2', name: 'Chim 04', icon: '🕊️', src: '/sounds/effect_chim-hot_04.mp3' },
-  { id: 'pho',   name: 'Phố xá',  icon: '️', src: '/sounds/effect_pho_01.mp3' },
+  { id: 'pho', name: 'Phố xá', icon: '🏙️', src: '/sounds/effect_pho_01.mp3' },
 ];
-
-function ChatBox() {
-  const [open, setOpen] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [chat, setChat] = useState<{role: string, text: string}[]>([]);
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat]);
-
-  const send = async () => {
-    if (!msg.trim() || loading) return;
-    const userMsg = msg; setMsg('');
-    setChat(p => [...p, { role: 'user', text: userMsg }]);
-    setLoading(true);
-    try {
-      const res = await fetch('/api/ai-composer', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ message: userMsg }) });
-      const data = await res.json();
-      setChat(p => [...p, { role: 'ai', text: data.reply || '...' }]);
-    } catch { setChat(p => [...p, { role: 'ai', text: 'Lỗi AI!' }]); }
-    finally { setLoading(false); }
-  };
-
-  if (!open) return (
-    <button onClick={() => setOpen(true)} style={{ position:'fixed', bottom:100, right:20, width:60, height:60, borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', border:'none', color:'#fff', fontSize:28, cursor:'pointer', boxShadow:'0 4px 20px rgba(99,102,241,0.4)', zIndex:999 }}>💬</button>
-  );
-
-  return (
-    <div style={{ position:'fixed', bottom:100, right:20, width:320, height:450, background:'rgba(17,24,39,0.98)', border:'1px solid #374151', borderRadius:16, boxShadow:'0 10px 40px rgba(0,0,0,0.5)', zIndex:999, display:'flex', flexDirection:'column', overflow:'hidden' }}>
-      <div style={{ padding:'1rem', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <span style={{ fontWeight:600 }}> AI Trợ Lý</span>
-        <button onClick={() => setOpen(false)} style={{ background:'rgba(255,255,255,0.2)', border:'none', color:'#fff', width:28, height:28, borderRadius:'50%', cursor:'pointer' }}>✕</button>
-      </div>
-      <div style={{ flex:1, overflowY:'auto', padding:'1rem', display:'flex', flexDirection:'column', gap:'0.5rem' }}>
-        {chat.length === 0 && <div style={{ textAlign:'center', color:'#6b7280', marginTop:'2rem', fontSize:'0.875rem' }}>🎧 Hỏi tôi về nhạc ngủ!</div>}
-        {chat.map((c, i) => (
-          <div key={i} style={{ alignSelf: c.role==='user'?'flex-end':'flex-start', background: c.role==='user'?'#6366f1':'#374151', color:'#fff', padding:'0.5rem 0.8rem', borderRadius:12, maxWidth:'85%', fontSize:'0.8rem', lineHeight:1.4 }}>{c.text}</div>
-        ))}
-        {loading && <div style={{ alignSelf:'flex-start', background:'#374151', color:'#9ca3af', padding:'0.5rem 0.8rem', borderRadius:12, fontSize:'0.8rem' }}>Đang nghĩ...</div>}
-        <div ref={endRef} />
-      </div>
-      <div style={{ padding:'0.75rem', display:'flex', gap:'0.5rem', borderTop:'1px solid #374151' }}>
-        <input value={msg} onChange={e => setMsg(e.target.value)} onKeyDown={e => e.key==='Enter' && send()} placeholder="Nhập..." style={{ flex:1, padding:'0.5rem', borderRadius:8, border:'1px solid #4b5563', background:'#111827', color:'#fff', fontSize:'0.8rem', outline:'none' }} />
-        <button onClick={send} disabled={loading || !msg.trim()} style={{ padding:'0.5rem 0.8rem', background: msg.trim()?'#6366f1':'#4b5563', border:'none', borderRadius:8, color:'#fff', cursor: msg.trim()?'pointer':'not-allowed' }}>➤</button>
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const [active, setActive] = useState<Set<string>>(new Set());
@@ -66,24 +19,66 @@ export default function Home() {
   const [masterVol, setMasterVol] = useState(0.7);
   const [sleepTimer, setSleepTimer] = useState<number | null>(null);
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
+  const [mixName, setMixName] = useState('');
+  const [savedMixes, setSavedMixes] = useState<{name: string, active: string[], masterVol: number}[]>([]);
+  const [showChat, setShowChat] = useState(false);
+  const [chatMsg, setChatMsg] = useState('');
+  const [chatHistory, setChatHistory] = useState<{role: string, text: string}[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Initialize
   useEffect(() => {
+    const saved = localStorage.getItem('saigon-night-state');
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        if (p.active) setActive(new Set(p.active));
+        if (p.masterVol) setMasterVol(p.masterVol);
+        if (p.volumes) setVolumes(p.volumes);
+      } catch {}
+    }
+    const mixes = localStorage.getItem('saigon-night-mixes');
+    if (mixes) setSavedMixes(JSON.parse(mixes));
+
     TRACKS.forEach(t => {
       if (!volumes[t.id]) setVolumes(p => ({...p, [t.id]: 0.5}));
-      if (t.src) { const a = new Audio(t.src); a.loop = true; a.preload = 'auto'; audioRefs.current.set(t.id, a); }
+      if (t.src) {
+        const a = new Audio(t.src); 
+        a.loop = true; 
+        a.preload = 'auto';
+        audioRefs.current.set(t.id, a);
+      }
     });
-    return () => { audioRefs.current.forEach(a => a.pause()); if(timerRef.current) clearInterval(timerRef.current); };
+    return () => { 
+      audioRefs.current.forEach(a => a.pause()); 
+      if(timerRef.current) clearInterval(timerRef.current); 
+    };
   }, []);
 
+  // Auto-save
+  useEffect(() => {
+    localStorage.setItem('saigon-night-state', JSON.stringify({
+      active: Array.from(active), masterVol, volumes
+    }));
+  }, [active, masterVol, volumes]);
+
+  // Timer
   useEffect(() => {
     if (sleepTimer && sleepTimer > 0) {
       setTimerRemaining(sleepTimer);
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = setInterval(() => {
         setTimerRemaining(p => {
-          if (p === null || p <= 1) { stopAll(); setSleepTimer(null); if(timerRef.current) clearInterval(timerRef.current); return null; }
+          if (p === null || p <= 1) { 
+            stopAll(); 
+            setSleepTimer(null); 
+            if(timerRef.current) clearInterval(timerRef.current); 
+            return null; 
+          }
           return p - 1;
         });
       }, 1000);
@@ -91,90 +86,361 @@ export default function Home() {
     return () => { if(timerRef.current) clearInterval(timerRef.current); };
   }, [sleepTimer]);
 
+  // Chat scroll
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
   const toggle = async (t: any) => {
     if (active.has(t.id)) {
-      const a = audioRefs.current.get(t.id); if(a) { a.pause(); a.currentTime=0; }
+      const a = audioRefs.current.get(t.id); 
+      if(a) { a.pause(); a.currentTime=0; }
       setActive(p => { const s=new Set(p); s.delete(t.id); return s; });
     } else {
       const a = audioRefs.current.get(t.id);
-      if(a) { try { a.volume = (volumes[t.id]||0.5)*masterVol; await a.play(); } catch{} }
+      if(a) { 
+        try { 
+          a.volume = (volumes[t.id]||0.5)*masterVol; 
+          await a.play(); 
+        } catch{} 
+      }
       setActive(p => new Set(p).add(t.id));
     }
   };
 
   const changeVol = (id: string, v: number) => {
     setVolumes(p => ({...p, [id]: v}));
-    const a = audioRefs.current.get(id); if(a && active.has(id)) a.volume = v * masterVol;
+    const a = audioRefs.current.get(id); 
+    if(a && active.has(id)) a.volume = v * masterVol;
   };
 
   const changeMaster = (v: number) => {
     setMasterVol(v);
-    TRACKS.forEach(t => { if(active.has(t.id)) { const a=audioRefs.current.get(t.id); if(a) a.volume = (volumes[t.id]||0.5)*v; } });
+    TRACKS.forEach(t => { 
+      if(active.has(t.id)) { 
+        const a=audioRefs.current.get(t.id); 
+        if(a) a.volume = (volumes[t.id]||0.5)*v; 
+      } 
+    });
   };
 
   const stopAll = () => {
     audioRefs.current.forEach(a => { a.pause(); a.currentTime=0; });
-    setActive(new Set()); setSleepTimer(null); setTimerRemaining(null);
+    setActive(new Set()); 
+    setSleepTimer(null); 
+    setTimerRemaining(null);
+  };
+
+  const saveMix = () => {
+    if (!mixName.trim()) return;
+    const newMix = { name: mixName, active: Array.from(active), masterVol };
+    const updated = [...savedMixes, newMix];
+    setSavedMixes(updated);
+    localStorage.setItem('saigon-night-mixes', JSON.stringify(updated));
+    setMixName('');
+    alert('💾 Đã lưu mix!');
+  };
+
+  const loadMix = (name: string) => {
+    const mix = savedMixes.find(m => m.name === name);
+    if (!mix) return;
+    stopAll();
+    setTimeout(() => {
+      setActive(new Set(mix.active));
+      setMasterVol(mix.masterVol);
+      mix.active.forEach(id => {
+        const a = audioRefs.current.get(id);
+        if(a) { 
+          a.volume = (volumes[id]||0.5)*mix.masterVol; 
+          a.play().catch(()=>{}); 
+        }
+      });
+    }, 50);
+  };
+
+  const deleteMix = (name: string) => {
+    const updated = savedMixes.filter(m => m.name !== name);
+    setSavedMixes(updated);
+    localStorage.setItem('saigon-night-mixes', JSON.stringify(updated));
+  };
+
+  const sendChat = async () => {
+    if (!chatMsg.trim() || chatLoading) return;
+    const userMsg = chatMsg; 
+    setChatMsg('');
+    setChatHistory(p => [...p, { role: 'user', text: userMsg }]);
+    setChatLoading(true);
+    try {
+      const res = await fetch('/api/ai-composer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMsg })
+      });
+      const data = await res.json();
+      setChatHistory(p => [...p, { role: 'ai', text: data.reply || '...' }]);
+    } catch {
+      setChatHistory(p => [...p, { role: 'ai', text: 'Lỗi kết nối!' }]);
+    } finally { 
+      setChatLoading(false); 
+    }
   };
 
   const fmt = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
 
-  const S: Record<string, any> = {
-    page: { minHeight:'100vh', background:'linear-gradient(180deg,#030712 0%,#1e1b4b 50%,#3b0764 100%)', color:'#f3f4f6', fontFamily:'system-ui,sans-serif', padding:'2rem 1rem', paddingBottom:'100px' },
-    header: { textAlign:'center', padding:'2rem 0' },
-    h1: { fontSize:'2.5rem', fontWeight:700, background:'linear-gradient(90deg,#818cf8,#c084fc)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', margin:0 },
-    sub: { color:'#9ca3af', marginTop:'0.5rem' },
-    panel: { maxWidth:'600px', margin:'0 auto 1.5rem', background:'rgba(31,41,55,0.5)', borderRadius:12, padding:'1rem', border:'1px solid #374151' },
-    row: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem', fontSize:'0.9rem', fontWeight:500 },
-    slider: { width:'100%', accentColor:'#818cf8', cursor:'pointer' },
-    btn: (a: boolean) => ({ padding:'0.4rem 0.8rem', border:'none', borderRadius:6, background:a?'#6366f1':'#374151', color:a?'#fff':'#d1d5db', cursor:'pointer', marginRight:5, marginBottom:5 }),
-    grid: { maxWidth:'1000px', margin:'0 auto', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))', gap:'1rem' },
-    card: (on: boolean) => ({ background:on?'rgba(99,102,241,0.2)':'rgba(31,41,55,0.5)', border:`2px solid ${on?'#818cf8':'#374151'}`, borderRadius:16, padding:'1.5rem 1rem', textAlign:'center', cursor:'pointer', transition:'all 0.2s' }),
-    bottom: { position:'fixed', bottom:0, left:0, right:0, background:'rgba(17,24,39,0.95)', backdropFilter:'blur(10px)', borderTop:'1px solid #374151', padding:'1rem' },
-    stopBtn: (d: boolean) => ({ padding:'0.6rem 1.5rem', borderRadius:12, border:'none', background:d?'#4b5563':'#dc2626', color:'#fff', fontWeight:600, cursor:d?'not-allowed':'pointer', opacity:d?0.5:1 })
-  };
-
   return (
-    <div style={S.page}>
-      <header style={S.header}>
-        <h1 style={S.h1}>Saigon Night 🌙</h1>
-        <p style={S.sub}>Trộn âm thanh • Thư giãn • Ngủ ngon</p>
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-purple-950 text-gray-100 font-sans pb-32">
+      {/* HEADER */}
+      <header className="text-center py-12 px-4">
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-3">
+          Saigon Night 🌙
+        </h1>
+        <p className="text-gray-400 text-lg">Trộn âm thanh • Thư giãn • Ngủ ngon</p>
       </header>
 
-      <div style={S.panel}>
-        <div style={S.row}><span>⏱️ Sleep Timer</span>{timerRemaining && <span style={{color:'#818cf8', fontFamily:'monospace'}}>{fmt(timerRemaining)}</span>}</div>
-        <div>
-          {[15,30,45,60].map(m => <button key={m} onClick={() => setSleepTimer(sleepTimer===m?null:m)} style={S.btn(sleepTimer===m)}>{m}m</button>)}
-          {sleepTimer && <button onClick={() => { setSleepTimer(null); setTimerRemaining(null); }} style={S.btn(false)}>Hủy</button>}
-        </div>
-      </div>
+      <div className="max-w-6xl mx-auto px-4 space-y-6">
+        {/* TIMER SECTION */}
+        <section className="bg-slate-900/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <span>⏱️</span> Sleep Timer
+            </h2>
+            {timerRemaining && (
+              <span className="text-indigo-400 font-mono text-lg">{fmt(timerRemaining)}</span>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {[15, 30, 45, 60].map(m => (
+              <button
+                key={m}
+                onClick={() => setSleepTimer(sleepTimer === m ? null : m)}
+                className={`px-6 py-2 rounded-xl font-medium transition-all ${
+                  sleepTimer === m
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                    : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                }`}
+              >
+                {m}m
+              </button>
+            ))}
+            {sleepTimer && (
+              <button
+                onClick={() => { setSleepTimer(null); setTimerRemaining(null); }}
+                className="px-6 py-2 rounded-xl bg-red-600/80 text-white hover:bg-red-600 transition-all"
+              >
+                Hủy
+              </button>
+            )}
+          </div>
+        </section>
 
-      <div style={S.panel}>
-        <div style={S.row}><span>🎚️ Master Volume</span><span style={{color:'#818cf8', fontFamily:'monospace'}}>{Math.round(masterVol*100)}%</span></div>
-        <input type="range" min="0" max="1" step="0.05" value={masterVol} onChange={e => changeMaster(parseFloat(e.target.value))} style={S.slider} />
-      </div>
+        {/* MASTER VOLUME */}
+        <section className="bg-slate-900/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <span>🎚️</span> Master Volume
+            </h2>
+            <span className="text-indigo-400 font-mono">{Math.round(masterVol * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={masterVol}
+            onChange={(e) => changeMaster(parseFloat(e.target.value))}
+            className="w-full h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+          />
+        </section>
 
-      <div style={S.grid}>
-        {TRACKS.map(t => {
-          const on = active.has(t.id);
-          return (
-            <div key={t.id} onClick={() => toggle(t)} style={S.card(on)}>
-              <div style={{fontSize:'2rem', marginBottom:'0.5rem'}}>{t.icon}</div>
-              <div style={{fontWeight:500, fontSize:'0.9rem'}}>{t.name}</div>
-              {on && <input type="range" min="0" max="1" step="0.05" value={volumes[t.id]||0.5} onChange={e => { e.stopPropagation(); changeVol(t.id, parseFloat(e.target.value)); }} onClick={e => e.stopPropagation()} style={{...S.slider, marginTop:'0.75rem'}} />}
+        {/* AUDIO TRACKS GRID */}
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {TRACKS.map(t => {
+            const on = active.has(t.id);
+            return (
+              <div
+                key={t.id}
+                onClick={() => toggle(t)}
+                className={`relative rounded-2xl p-6 cursor-pointer transition-all duration-300 ${
+                  on
+                    ? 'bg-indigo-600/20 border-2 border-indigo-500 shadow-xl shadow-indigo-500/20'
+                    : 'bg-slate-900/50 border-2 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <div className="text-5xl mb-3 text-center">{t.icon}</div>
+                <div className="text-center font-semibold text-lg mb-3">{t.name}</div>
+                {on && (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={volumes[t.id] || 0.5}
+                      onChange={(e) => changeVol(t.id, parseFloat(e.target.value))}
+                      className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-400"
+                    />
+                    <div className="text-center text-xs text-gray-400 mt-1">
+                      {Math.round((volumes[t.id] || 0.5) * 100)}%
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </section>
+
+        {/* SAVE/LOAD MIX */}
+        <section className="bg-slate-900/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span>💾</span> Lưu & Tải Mix
+          </h2>
+          <div className="flex gap-3 mb-4">
+            <input
+              value={mixName}
+              onChange={(e) => setMixName(e.target.value)}
+              placeholder="Tên mix mới..."
+              className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              onClick={saveMix}
+              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all"
+            >
+              Lưu
+            </button>
+          </div>
+          {savedMixes.length > 0 && (
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {savedMixes.map(m => (
+                <div
+                  key={m.name}
+                  className="flex justify-between items-center p-3 bg-slate-800/50 rounded-xl"
+                >
+                  <button
+                    onClick={() => loadMix(m.name)}
+                    className="text-left flex-1 hover:text-indigo-400 transition-colors"
+                  >
+                    <span className="font-medium">{m.name}</span>
+                    <span className="text-gray-500 text-sm ml-2">({m.active.length} tracks)</span>
+                  </button>
+                  <button
+                    onClick={() => deleteMix(m.name)}
+                    className="px-3 py-1 bg-red-600/80 hover:bg-red-600 text-white rounded-lg text-sm transition-all"
+                  >
+                    Xóa
+                  </button>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          )}
+        </section>
       </div>
 
-      <div style={S.bottom}>
-        <div style={{maxWidth:'600px', margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-          <span style={{color:'#9ca3af', fontSize:'0.9rem'}}>{active.size}/8 active</span>
-          <button onClick={stopAll} disabled={active.size===0} style={S.stopBtn(active.size===0)}>⏹ Stop All</button>
+      {/* FIXED BOTTOM BAR */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800 p-4">
+        <div className="max-w-6xl mx-auto flex justify-between items-center">
+          <span className="text-gray-400 font-medium">
+            {active.size}/8 tracks active
+          </span>
+          <button
+            onClick={stopAll}
+            disabled={active.size === 0}
+            className={`px-8 py-3 rounded-xl font-semibold transition-all ${
+              active.size > 0
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-500/30'
+                : 'bg-slate-800 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            ⏹ Stop All
+          </button>
         </div>
       </div>
 
-      <ChatBox />
+      {/* CHAT BUTTON */}
+      <button
+        onClick={() => setShowChat(true)}
+        className="fixed bottom-24 right-6 w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full shadow-xl shadow-indigo-500/40 flex items-center justify-center text-2xl hover:scale-110 transition-transform z-40"
+      >
+        💬
+      </button>
+
+      {/* CHAT MODAL */}
+      {showChat && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md max-h-[600px] flex flex-col shadow-2xl">
+            {/* Chat Header */}
+            <div className="flex justify-between items-center p-4 border-b border-slate-800 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-2xl">
+              <h3 className="font-semibold text-white flex items-center gap-2">
+                <span>🤖</span> AI Trợ Lý Âm Nhạc
+              </h3>
+              <button
+                onClick={() => setShowChat(false)}
+                className="text-white/80 hover:text-white text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 max-h-96">
+              {chatHistory.length === 0 && (
+                <div className="text-center text-gray-500 py-8">
+                  <div className="text-4xl mb-2">🎧</div>
+                  <div>Hỏi tôi về âm nhạc thư giãn!</div>
+                  <div className="text-sm mt-2">Ví dụ: "Nhạc nào giúp ngủ ngon?"</div>
+                </div>
+              )}
+              {chatHistory.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                      msg.role === 'user'
+                        ? 'bg-indigo-600 text-white rounded-br-sm'
+                        : 'bg-slate-800 text-gray-200 rounded-bl-sm'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-slate-800 text-gray-400 px-4 py-2 rounded-2xl rounded-bl-sm">
+                    Đang nghĩ...
+                  </div>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input */}
+            <div className="p-4 border-t border-slate-800">
+              <div className="flex gap-2">
+                <input
+                  value={chatMsg}
+                  onChange={(e) => setChatMsg(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendChat()}
+                  placeholder="Nhập tin nhắn..."
+                  className="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+                />
+                <button
+                  onClick={sendChat}
+                  disabled={chatLoading || !chatMsg.trim()}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                    chatMsg.trim() && !chatLoading
+                      ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      : 'bg-slate-800 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  ➤
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
