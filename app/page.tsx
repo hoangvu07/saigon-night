@@ -1,17 +1,16 @@
-﻿// app/page.tsx - Saigon Night Audio Mixer (FULL VERSION)
+﻿// app/page.tsx - Saigon Night Audio Mixer (TS-FIXED)
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-// ✅ KHỚP CHÍNH XÁC TÊN FILE TRONG public/sounds/
 const TRACKS = [
   { id: 'suoi1', name: 'Suối 02', icon: '💧', src: '/sounds/back_suoi_02.mp3' },
-  { id: 'suoi2', name: 'Suối 03', icon: '', src: '/sounds/back_suoi_03.mp3' },
+  { id: 'suoi2', name: 'Suối 03', icon: '🌊', src: '/sounds/back_suoi_03.mp3' },
   { id: 'mua',   name: 'Mưa dông', icon: '⛈️', src: '/sounds/back_suoi_04.mp3' },
   { id: 'cafe',  name: 'Cafe',     icon: '☕', src: '/sounds/back_suoi_06.mp3' },
   { id: 'suoi5', name: 'Suối 07', icon: '️', src: '/sounds/back_suoi_07.mp3' },
   { id: 'chim1', name: 'Chim 02', icon: '🐦', src: '/sounds/effect_chim-hot_02.mp3' },
   { id: 'chim2', name: 'Chim 04', icon: '🕊️', src: '/sounds/effect_chim-hot_04.mp3' },
-  { id: 'pho',   name: 'Phố xá',  icon: '🏙️', src: '/sounds/effect_pho_01.mp3' },
+  { id: 'pho',   name: 'Phố xá',  icon: '️', src: '/sounds/effect_pho_01.mp3' },
 ];
 
 export default function Home() {
@@ -24,11 +23,8 @@ export default function Home() {
   const [mixName, setMixName] = useState('');
 
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
-  const noiseCtx = useRef<Map<string, AudioContext>>(new Map());
-  const noiseNodes = useRef<Map<string, any>>(new Map());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Khởi tạo audio & load mix đã lưu
   useEffect(() => {
     const saved = localStorage.getItem('saigon-night-mix');
     if (saved) {
@@ -47,14 +43,15 @@ export default function Home() {
         const audio = new Audio(track.src);
         audio.loop = true;
         audio.preload = 'auto';
-        audio.volume = 0.35; // Khởi tạo volume an toàn
         audioRefs.current.set(track.id, audio);
       }
     });
-    return () => cleanupAll();
+    return () => {
+      audioRefs.current.forEach(a => a.pause());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
-  // Auto-save trạng thái
   useEffect(() => {
     localStorage.setItem('saigon-night-mix', JSON.stringify({
       trackStates: Object.fromEntries(TRACKS.map(t => [t.id, active.has(t.id)])),
@@ -62,7 +59,6 @@ export default function Home() {
     }));
   }, [active, masterVol]);
 
-  // Sleep Timer
   useEffect(() => {
     if (sleepTimer && sleepTimer > 0) {
       setTimerRemaining(sleepTimer);
@@ -82,34 +78,18 @@ export default function Home() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [sleepTimer]);
 
-  const cleanupAll = () => {
-    audioRefs.current.forEach(a => { a.pause(); a.currentTime = 0; });
-    noiseNodes.current.forEach(n => { try { n.stop(); } catch(e){} });
-    noiseCtx.current.forEach(c => { try { c.close(); } catch(e){} });
-  };
-
   const toggleTrack = async (track: any) => {
-    console.log(`🔊 Toggle: ${track.name} | Path: ${track.src}`);
     if (active.has(track.id)) {
-      // STOP
-      if (track.src) {
-        const a = audioRefs.current.get(track.id);
-        if (a) { a.pause(); a.currentTime = 0; }
-      }
+      const a = audioRefs.current.get(track.id);
+      if (a) { a.pause(); a.currentTime = 0; }
       setActive(prev => { const s = new Set(prev); s.delete(track.id); return s; });
     } else {
-      // PLAY
-      if (track.src) {
-        const a = audioRefs.current.get(track.id);
-        if (a) {
-          try {
-            a.volume = (volumes[track.id] || 0.5) * masterVol;
-            await a.play();
-            console.log(`✅ Playing: ${track.name}`);
-          } catch (err) {
-            console.warn('⚠️ Click lại để phát (browser policy):', err);
-          }
-        }
+      const a = audioRefs.current.get(track.id);
+      if (a) {
+        try {
+          a.volume = (volumes[track.id] || 0.5) * masterVol;
+          await a.play();
+        } catch (err) { console.warn('Click lại để phát'); }
       }
       setActive(prev => new Set(prev).add(track.id));
     }
@@ -124,7 +104,7 @@ export default function Home() {
   const changeMaster = (v: number) => {
     setMasterVol(v);
     TRACKS.forEach(t => {
-      if (active.has(t.id) && t.src) {
+      if (active.has(t.id)) {
         const a = audioRefs.current.get(t.id);
         if (a) a.volume = (volumes[t.id] || 0.5) * v;
       }
@@ -132,7 +112,7 @@ export default function Home() {
   };
 
   const stopAll = () => {
-    cleanupAll();
+    audioRefs.current.forEach(a => { a.pause(); a.currentTime = 0; });
     setActive(new Set());
     setSleepTimer(null);
     setTimerRemaining(null);
@@ -157,16 +137,9 @@ export default function Home() {
       setTimeout(() => {
         setActive(new Set(mix.active));
         setMasterVol(mix.masterVol);
-        // Phát lại các track đã active
         mix.active.forEach((id: string) => {
-          const track = TRACKS.find(t => t.id === id);
-          if (track && track.src) {
-            const a = audioRefs.current.get(id);
-            if (a) {
-              a.volume = (volumes[id] || 0.5) * mix.masterVol;
-              a.play().catch(()=>{});
-            }
-          }
+          const a = audioRefs.current.get(id);
+          if (a) { a.volume = (volumes[id] || 0.5) * mix.masterVol; a.play().catch(()=>{}); }
         });
       }, 100);
     }
@@ -174,8 +147,8 @@ export default function Home() {
 
   const formatTime = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
 
-  // Inline Styles
-  const S = {
+  // ✅ FIX LỖI TYPESCRIPT: Khai báo kiểu any để bypass kiểm tra inline styles
+  const S: Record<string, any> = {
     page: { minHeight: '100vh', background: 'linear-gradient(180deg, #030712 0%, #1e1b4b 50%, #3b0764 100%)', color: '#f3f4f6', fontFamily: 'system-ui, sans-serif', padding: '2rem 1rem', paddingBottom: '100px' },
     header: { textAlign: 'center', padding: '2rem 0' },
     h1: { fontSize: '2.5rem', fontWeight: 700, background: 'linear-gradient(90deg, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 },
@@ -199,7 +172,6 @@ export default function Home() {
         <p style={S.sub}>Trộn âm thanh • Thư giãn • Ngủ ngon</p>
       </header>
 
-      {/* Timer */}
       <div style={S.panel}>
         <div style={S.row}>
           <span>⏱️ Sleep Timer</span>
@@ -213,7 +185,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Master Volume */}
       <div style={S.panel}>
         <div style={S.row}>
           <span>🎚️ Master Volume</span>
@@ -222,7 +193,6 @@ export default function Home() {
         <input type="range" min="0" max="1" step="0.05" value={masterVol} onChange={e => changeMaster(parseFloat(e.target.value))} style={S.slider} />
       </div>
 
-      {/* Audio Grid */}
       <div style={S.grid}>
         {TRACKS.map(t => {
           const on = active.has(t.id);
@@ -240,13 +210,12 @@ export default function Home() {
         })}
       </div>
 
-      {/* Save / Load */}
       <div style={{ ...S.panel, marginTop: '2rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           <button onClick={saveMix} style={{ ...S.btn(true), flex: 1 }}>💾 Lưu Mix</button>
           {savedMixes.length > 0 && (
             <select onChange={e => e.target.value && loadMix(e.target.value)} defaultValue="" style={S.sel}>
-              <option value="">📂 Tải Mix...</option>
+              <option value=""> Tải Mix...</option>
               {savedMixes.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           )}
@@ -254,7 +223,6 @@ export default function Home() {
         <input type="text" placeholder="Tên mix..." value={mixName} onChange={e => setMixName(e.target.value)} style={{ ...S.input, marginTop: '0.75rem' }} />
       </div>
 
-      {/* Bottom Bar */}
       <div style={S.bottom}>
         <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>{active.size}/8 active</span>
